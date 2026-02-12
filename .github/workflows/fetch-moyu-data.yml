@@ -16,13 +16,7 @@ jobs:
       
       - name: 获取API数据
         run: |
-          curl -s -L \
-            -H "User-Agent: okhttp/4.9.0" \
-            -H "Accept: application/json" \
-            -H "Accept-Language: zh-CN,zh;q=0.9" \
-            -H "Cache-Control: no-cache" \
-            -H "Pragma: no-cache" \
-            "http://我不是.摸鱼儿.com" > moyu_data.json
+          curl -s -H "User-Agent: okhttp/4.9.0" "http://我不是.摸鱼儿.com" > moyu_data.json
       
       - name: 提交到仓库
         run: |
