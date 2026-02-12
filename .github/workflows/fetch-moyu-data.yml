@@ -1,0 +1,51 @@
+name: 定期获取API数据
+
+on:
+  schedule:
+    # 每周一 00:00 UTC 执行
+    - cron: '0 0 * * 1'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 获取API数据
+        id: fetch
+        run: |
+          RESPONSE=$(curl -s -H "User-Agent: okhttp/4.9.0" "http://我不是.摸鱼儿.com")
+          echo "response=$RESPONSE" >> $GITHUB_OUTPUT
+          echo "获取到的响应: $RESPONSE"
+      
+      - name: 验证JSON并保存
+        run: |
+          RESPONSE='${{ steps.fetch.outputs.response }}'
+          
+          # 尝试验证JSON格式
+          if echo "$RESPONSE" | jq empty 2>/dev/null; then
+            echo "✓ 返回数据为有效JSON格式"
+            echo "$RESPONSE" | jq . > moyu_data.json
+            echo "✓ 数据已保存为 moyu_data.json"
+          else
+            echo "✗ 返回数据不是有效JSON格式"
+            echo "原始响应: $RESPONSE"
+            exit 1
+          fi
+      
+      - name: 提交数据到仓库
+        run: |
+          git config --local user.email "kongeyj@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # 检查是否有变化
+          if git diff --quiet moyu_data.json; then
+            echo "数据未变化，跳过提交"
+          else
+            git add moyu_data.json
+            git commit -m "chore: 更新API数据 - $(date '+%Y-%m-%d %H:%M:%S')"
+            git push
+          fi
