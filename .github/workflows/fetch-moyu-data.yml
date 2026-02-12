@@ -14,9 +14,18 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
       
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: 安装依赖
+        run: |
+          pip install requests
+      
       - name: 获取API数据
         run: |
-          curl -s -H "User-Agent: okhttp/4.9.0" "http://我不是.摸鱼儿.com" > moyu_data.json
+          python fetch_api.py
       
       - name: 提交到仓库
         run: |
