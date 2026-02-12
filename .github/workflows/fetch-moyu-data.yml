@@ -14,44 +14,34 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
       
-      - name: 获取API数据
+      - name: 获取API数据并保存
         run: |
-          # 添加详细的curl选项：-v显示详细信息，-L跟随重定向，-i显示响应头
-          curl -i -L -H "User-Agent: okhttp/4.9.0" "http://我不是.摸鱼儿.com" -o response.txt
-          cat response.txt
-          echo "---"
-          echo "响应已保存到 response.txt"
-      
-      - name: 验证JSON并保存
-        run: |
-          # 从响应中提取body部分（跳过HTTP头）
-          # 如果有HTTP头，使用tail取最后部分
-          RESPONSE=$(tail -1 response.txt)
+          # 使用curl获取API数据，-s静默模式，-L跟随重定向
+          curl -s -L -H "User-Agent: okhttp/4.9.0" "http://我不是.摸鱼儿.com" > moyu_data.json
           
-          echo "提取的响应内容："
-          echo "$RESPONSE"
+          echo "✓ 原始响应已保存"
           echo "---"
-          
-          # 尝试验证JSON格式
-          if echo "$RESPONSE" | jq empty 2>/dev/null; then
-            echo "✓ 返回数据为有效JSON格式"
-            echo "$RESPONSE" | jq . > moyu_data.json
-            echo "✓ 数据已保存为 moyu_data.json"
-          else
-            echo "⚠ 返回数据不是有效JSON格式，将原始响应保存为 moyu_data.json"
-            echo "$RESPONSE" > moyu_data.json
-          fi
+          head -c 200 moyu_data.json
+          echo -e "\n..."
       
       - name: 提交数据到仓库
         run: |
-          git config --local user.email "kongeyj@github.com"
+          git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # 检查是否有变化
-          if git diff --quiet moyu_data.json; then
-            echo "数据未变化，跳过提交"
+          # 检查文件是否存在且有内容
+          if [ -f moyu_data.json ] && [ -s moyu_data.json ]; then
+            # 检查是否有变化
+            if ! git diff --quiet moyu_data.json; then
+              echo "✓ 数据已更改，正在提交..."
+              git add moyu_data.json
+              git commit -m "chore: 更新API数据 - $(date '+%Y-%m-%d %H:%M:%S')"
+              git push origin main
+              echo "✓ 成功推送到仓库"
+            else
+              echo "ℹ 数据未变化，跳过提交"
+            fi
           else
-            git add moyu_data.json
-            git commit -m "chore: 更新API数据 - $(date '+%Y-%m-%d %H:%M:%S')"
-            git push
+            echo "✗ moyu_data.json文件不存在或为空"
+            exit 1
           fi
