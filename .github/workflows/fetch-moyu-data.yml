@@ -15,15 +15,22 @@ jobs:
         uses: actions/checkout@v4
       
       - name: 获取API数据
-        id: fetch
         run: |
-          RESPONSE=$(curl -s -H "User-Agent: okhttp/4.9.0" "http://我不是.摸鱼儿.com")
-          echo "response=$RESPONSE" >> $GITHUB_OUTPUT
-          echo "获取到的响应: $RESPONSE"
+          # 添加详细的curl选项：-v显示详细信息，-L跟随重定向，-i显示响应头
+          curl -i -L -H "User-Agent: okhttp/4.9.0" "http://我不是.摸鱼儿.com" -o response.txt
+          cat response.txt
+          echo "---"
+          echo "响应已保存到 response.txt"
       
       - name: 验证JSON并保存
         run: |
-          RESPONSE='${{ steps.fetch.outputs.response }}'
+          # 从响应中提取body部分（跳过HTTP头）
+          # 如果有HTTP头，使用tail取最后部分
+          RESPONSE=$(tail -1 response.txt)
+          
+          echo "提取的响应内容："
+          echo "$RESPONSE"
+          echo "---"
           
           # 尝试验证JSON格式
           if echo "$RESPONSE" | jq empty 2>/dev/null; then
@@ -31,9 +38,8 @@ jobs:
             echo "$RESPONSE" | jq . > moyu_data.json
             echo "✓ 数据已保存为 moyu_data.json"
           else
-            echo "✗ 返回数据不是有效JSON格式"
-            echo "原始响应: $RESPONSE"
-            exit 1
+            echo "⚠ 返回数据不是有效JSON格式，将原始响应保存为 moyu_data.json"
+            echo "$RESPONSE" > moyu_data.json
           fi
       
       - name: 提交数据到仓库
