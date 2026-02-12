@@ -14,34 +14,14 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
       
-      - name: 获取API数据并保存
+      - name: 获取API数据
         run: |
-          # 使用curl获取API数据，-s静默模式，-L跟随重定向
           curl -s -L -H "User-Agent: okhttp/4.9.0" "http://我不是.摸鱼儿.com" > moyu_data.json
-          
-          echo "✓ 原始响应已保存"
-          echo "---"
-          head -c 200 moyu_data.json
-          echo -e "\n..."
       
-      - name: 提交数据到仓库
+      - name: 提交到仓库
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
-          # 检查文件是否存在且有内容
-          if [ -f moyu_data.json ] && [ -s moyu_data.json ]; then
-            # 检查是否有变化
-            if ! git diff --quiet moyu_data.json; then
-              echo "✓ 数据已更改，正在提交..."
-              git add moyu_data.json
-              git commit -m "chore: 更新API数据 - $(date '+%Y-%m-%d %H:%M:%S')"
-              git push origin main
-              echo "✓ 成功推送到仓库"
-            else
-              echo "ℹ 数据未变化，跳过提交"
-            fi
-          else
-            echo "✗ moyu_data.json文件不存在或为空"
-            exit 1
-          fi
+          git add moyu_data.json
+          git commit -m "chore: 更新API数据 - $(date '+%Y-%m-%d %H:%M:%S')" || echo "无变化"
+          git push || true
